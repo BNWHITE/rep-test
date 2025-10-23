@@ -1,20 +1,13 @@
 #!/bin/bash
 
-# Dossiers et fichiers
+# Répertoires
 SRC_DIR="Source"
 BACKUP_DIR="Backup"
-ARCHIVE_NAME="Backup_$(date +%Y-%m-%d_%H-%M-%S).tar.gz"
-LOG_FILE="log.txt"
 
-# Créer Backup si nécessaire
+# Créer Backup si inexistant
 mkdir -p "$BACKUP_DIR"
 
-# Copier les fichiers
-cp -r "$SRC_DIR/"* "$BACKUP_DIR"/
+# Copier tous les fichiers de Source vers Backup
+cp -r "$SRC_DIR/"* "$BACKUP_DIR/"
 
-# Créer l’archive
-tar -czf "$ARCHIVE_NAME" "$BACKUP_DIR"
-
-# Log simple
-echo "Sauvegarde faite le $(date)" >> "$LOG_FILE"
-echo "Fichiers copiés dans $BACKUP_DIR, archive créée : $ARCHIVE_NAME" >> "$LOG_FILE"
+echo "✅ Tous les fichiers de Source ont été copiés dans Backup"
