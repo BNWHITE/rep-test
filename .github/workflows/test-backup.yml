@@ -1,0 +1,36 @@
+name: Test du script cache.sh
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  run-cache-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+
+      - name: Afficher le contenu du dépôt
+        run: ls -R
+
+      - name: Rendre le script exécutable
+        run: chmod +x cache.sh
+
+      - name: Exécuter le script cache.sh
+        run: ./cache.sh
+
+      - name: Vérifier les résultats
+        run: |
+          echo "== Vérification du dossier Backup =="
+          ls Backup
+          echo "== Vérification de l'archive =="
+          ls | grep "backup_.*\.tar\.gz"
+          echo "== Vérification du log =="
+          cat log.txt
+
