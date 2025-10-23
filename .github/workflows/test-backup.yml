@@ -1,49 +1,17 @@
-name: Test du script cache.sh
+name: Test simple cache.sh
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  run-cache-script:
+  test:
     runs-on: ubuntu-latest
-
     steps:
-      # 1️⃣ Cloner le code du dépôt
-      - name: Checkout du dépôt
-        uses: actions/checkout@v4
-
-      # 2️⃣ Vérifier la structure du projet
-      - name: Afficher le contenu du dépôt
-        run: ls -R
-
-      # 3️⃣ Donner les permissions d’exécution au script
-      - name: Rendre le script exécutable
-        run: chmod +x cache.sh
-
-      # 4️⃣ Lancer le script
-      - name: Exécuter le script cache.sh
-        run: ./cache.sh
-
-      # 5️⃣ Vérifier que les fichiers ont été copiés
-      - name: Vérifier les résultats
-        run: |
-          echo "== Vérification du dossier Backup =="
-          ls Backup
-          echo "== Vérification de l'archive =="
-          ls | grep "backup_.*\.tar\.gz"
-          echo "== Vérification du log =="
-          cat log.txt
-
-      # 6️⃣ (Optionnel) — Sauvegarder le log et l’archive en artefacts
-      - name: Sauvegarder les fichiers générés
-        uses: actions/upload-artifact@v4
-        with:
-          name: resultats-backup
-          path: |
-            log.txt
-            backup_*.tar.gz
+      - uses: actions/checkout@v4
+      - run: chmod +x cache.sh
+      - run: ./cache.sh
+      - run: ls Backup
+      - run: ls Backup_*.tar.gz
+      - run: cat log.txt
