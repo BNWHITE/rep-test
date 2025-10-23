@@ -13,19 +13,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          persist-credentials: false  # on utilisera GITHUB_TOKEN pour push
+          persist-credentials: true  # important : permet le push automatique
 
       - name: Copier Source dans Backup
         run: |
           mkdir -p Backup
           cp -r Source/* Backup/
 
-      - name: Commit et push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit et push les changements
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add Backup/*
           git commit -m "Synchronisation automatique Source → Backup [skip ci]" || echo "Rien à committer"
-          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:main
+          git push
