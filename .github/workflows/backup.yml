@@ -1,53 +1,112 @@
-name: Auto Backup
+name: 🔄 Auto Backup - Source to Backup
 
 on:
+  # Déclencheurs
   push:
     paths:
-      - 'Source/**'
+      - 'Source/**'  # Se déclenche seulement si Source change
     branches: [ main ]
-  workflow_dispatch:
+  
+  pull_request:
+    branches: [ main ]
+  
+  schedule:
+    # Backup automatique tous les jours à minuit (UTC)
+    - cron: '0 0 * * *'
+  
+  workflow_dispatch:  # Permet de lancer manuellement
+
+env:
+  SOURCE_DIR: 'Source'
+  BACKUP_DIR: 'Backup'
 
 jobs:
-  backup:
+  synchronisation:
+    name: 🔄 Synchronisation Source → Backup
     runs-on: ubuntu-latest
     permissions:
       contents: write
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        fetch-depth: 0
-
-    - name: Setup Git
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-
-    - name: Sync Source to Backup
-      run: |
-        # Nettoyer et recréer Backup
-        rm -rf Backup
-        mkdir -p Backup
-        
-        # Copier tout le contenu de Source
-        if [ -d "Source" ]; then
-          cp -r Source/* Backup/ 2>/dev/null || true
-          echo "✅ Fichiers copiés de Source vers Backup"
-        fi
-        
-        # Vérifier le contenu
-        echo "Contenu de Backup:"
-        ls -la Backup/
-
-    - name: Commit and push changes
-      run: |
-        git add Backup/
-        if git diff --staged --quiet; then
-          echo "🔵 Aucun changement détecté"
-        else
-          git commit -m "🤖 Auto-backup: Source → Backup"
+      # Étape 1: Récupération du code
+      - name: 📥 Checkout du repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Récupère tout l'historique
+      
+      # Étape 2: Configuration Git
+      - name: ⚙️ Configuration Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "✅ Git configuré"
+      
+      # Étape 3: Synchronisation des fichiers
+      - name: 📂 Synchronisation Source → Backup
+        run: |
+          echo "🔄 Début de la synchronisation..."
+          echo "Dossier Source: $SOURCE_DIR"
+          echo "Dossier Backup: $BACKUP_DIR"
+          
+          # Vérifier si Source existe
+          if [ ! -d "$SOURCE_DIR" ]; then
+            echo "❌ Le dossier $SOURCE_DIR n'existe pas"
+            exit 1
+          fi
+          
+          # Nettoyer le Backup existant
+          if [ -d "$BACKUP_DIR" ]; then
+            rm -rf "$BACKUP_DIR"/*
+            echo "🧹 Backup précédent nettoyé"
+          else
+            mkdir -p "$BACKUP_DIR"
+            echo "📁 Dossier Backup créé"
+          fi
+          
+          # Copier récursivement le contenu
+          cp -r "$SOURCE_DIR"/* "$BACKUP_DIR"/ 2>/dev/null || true
+          
+          # Vérification
+          echo "✅ Synchronisation terminée"
+          echo "📊 Contenu de Backup:"
+          ls -la "$BACKUP_DIR"/
+          echo "📊 Contenu de Source:"
+          ls -la "$SOURCE_DIR"/
+      
+      # Étape 4: Vérification des changements
+      - name: 🔍 Vérification des modifications
+        id: check_changes
+        run: |
+          git add "$BACKUP_DIR"/
+          if git diff --staged --quiet; then
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+            echo "🔵 Aucun changement détecté"
+          else
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+            echo "🟢 Changements détectés - Commit nécessaire"
+            echo "📝 Fichiers modifiés:"
+            git diff --staged --name-only
+          fi
+      
+      # Étape 5: Commit et Push
+      - name: 📝 Commit et Push des changements
+        if: steps.check_changes.outputs.changes_detected == 'true'
+        run: |
+          # Créer le message de commit avec date
+          COMMIT_MSG="🤖 Auto-Backup: $(date +'%Y-%m-%d %H:%M:%S')"
+          
+          git commit -m "$COMMIT_MSG"
           git push
-          echo "✅ Backup réussi !"
-        fi
+          echo "✅ Backup poussé avec succès!"
+          echo "📋 Commit: $COMMIT_MSG"
+      
+      # Étape 6: Rapport final
+      - name: 📊 Rapport de synchronisation
+        run: |
+          echo "🎉 SYNCHRONISATION TERMINÉE"
+          echo "================================"
+          echo "🕐 Heure: $(date)"
+          echo "📁 Source: $SOURCE_DIR"
+          echo "📁 Backup: $BACKUP_DIR"
+          echo "🔄 Changements: ${{ steps.check_changes.outputs.changes_detected }}"
+          echo "================================"
