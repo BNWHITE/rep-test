@@ -1,65 +1,61 @@
-name: Backup Source to Backup
+name: Force Backup
 
 on:
   push:
     paths:
       - 'Source/**'
     branches: [ test2 ]
-  workflow_dispatch:  # Déclenchement manuel
+  workflow_dispatch:
 
 jobs:
-  backup:
+  force-backup:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        ref: test2  # Spécifier la branche test2
+        ref: test2
+        fetch-depth: 0
 
     - name: Setup Git config
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Sync Source to Backup
+    - name: Force clean sync
       run: |
-        # Créer le dossier Backup s'il n'existe pas
+        # Supprimer complètement le dossier Backup
+        rm -rf Backup
+        
+        # Recréer et copier tout depuis Source
         mkdir -p Backup
-        
-        # Synchroniser le contenu (supprimer ancien, copier nouveau)
-        if [ -d "Backup" ]; then
-          rm -rf Backup/*
-        fi
-        
-        # Copier tout le contenu de Source vers Backup
-        if [ -d "Source" ]; then
-          cp -r Source/* Backup/ 2>/dev/null || true
-          echo "✅ Contenu de Source copié vers Backup"
+        if [ -d "Source" ] && [ "$(ls -A Source)" ]; then
+          cp -r Source/* Backup/
+          echo "✅ Synchronisation forcée: Source → Backup"
+          echo "Fichiers copiés:"
+          ls -la Backup/
         else
-          echo "❌ Le dossier Source n'existe pas"
-        fi
-        
-        # Afficher le contenu pour debug
-        echo "Contenu de Backup après sync:"
-        ls -la Backup/ || echo "Backup vide"
-
-    - name: Check for changes
-      id: changes
-      run: |
-        git add Backup/
-        if git diff --staged --quiet; then
-          echo "has_changes=false" >> $GITHUB_OUTPUT
-          echo "🔵 Aucun changement détecté"
-        else
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-          echo "🟢 Changements détectés, commit à faire"
+          echo "⚠️ Le dossier Source est vide ou n'existe pas"
+          # Créer un fichier vide pour forcer le commit
+          touch Backup/sync-info.txt
         fi
 
-    - name: Commit and push changes
-      if: steps.changes.outputs.has_changes == 'true'
+    - name: Force add and commit
       run: |
-        git commit -m "🔄 Sync automatique: Source → Backup [skip ci]"
-        git push origin test2
-        echo "✅ Changements poussés sur la branche test2"
+        # Ajouter tous les changements de force
+        git add -f Backup/
+        git add -A
+        
+        # Créer le commit même si vide (--allow-empty)
+        git commit -m "🚀 FORCE SYNC: Source → Backup" --allow-empty
+        
+        echo "✅ Commit créé avec changement forcé"
+
+    - name: Force push to test2
+      run: |
+        git push origin test2 --force
+        echo "🎯 Push forcé effectué sur test2"
