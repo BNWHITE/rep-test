@@ -11,16 +11,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        with:
+          persist-credentials: false  # Important pour utiliser notre token
+          
       - name: Copier Source dans Backup
         run: |
           mkdir -p Backup
           cp -r Source/* Backup/
 
       - name: Commit et push les changements
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add Backup/*
           git commit -m "Synchronisation automatique Source → Backup [skip ci]" || echo "Rien à committer"
-          git push
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:main
