@@ -1,30 +1,53 @@
-name: Brutal Backup
+name: Auto Backup
 
 on:
   push:
-    branches: [ test2 ]
+    paths:
+      - 'Source/**'
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  brutal-sync:
+  backup:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
       with:
-        ref: test2
-    
-    - name: Destroy and recreate Backup
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Setup Git
       run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Sync Source to Backup
+      run: |
+        # Nettoyer et recréer Backup
         rm -rf Backup
-        mkdir Backup
-        [ -d "Source" ] && cp -r Source/* Backup/ 2>/dev/null || true
-        echo "Brutal sync done: $(date)" > Backup/sync-force.txt
-    
-    - name: Push brutally
+        mkdir -p Backup
+        
+        # Copier tout le contenu de Source
+        if [ -d "Source" ]; then
+          cp -r Source/* Backup/ 2>/dev/null || true
+          echo "✅ Fichiers copiés de Source vers Backup"
+        fi
+        
+        # Vérifier le contenu
+        echo "Contenu de Backup:"
+        ls -la Backup/
+
+    - name: Commit and push changes
       run: |
-        git config user.name "GitHub Brutal Bot"
-        git config user.email "actions@users.noreply.github.com"
-        git add .
-        git commit -m "💥 BRUTAL SYNC: $(date)" || exit 0
-        git push origin test2 --force
+        git add Backup/
+        if git diff --staged --quiet; then
+          echo "🔵 Aucun changement détecté"
+        else
+          git commit -m "🤖 Auto-backup: Source → Backup"
+          git push
+          echo "✅ Backup réussi !"
+        fi
