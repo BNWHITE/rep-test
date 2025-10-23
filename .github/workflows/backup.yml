@@ -4,8 +4,8 @@ on:
   push:
     paths:
       - 'Source/**'
-    branches: [ main ]
-  workflow_dispatch:  # Permet de déclencher manuellement
+    branches: [ test2 ]
+  workflow_dispatch:  # Déclenchement manuel
 
 jobs:
   backup:
@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        fetch-depth: 0
+        ref: test2  # Spécifier la branche test2
 
     - name: Setup Git config
       run: |
@@ -28,17 +28,38 @@ jobs:
         # Créer le dossier Backup s'il n'existe pas
         mkdir -p Backup
         
-        # Copier récursivement le contenu de Source vers Backup
-        cp -r Source/* Backup/ || true
+        # Synchroniser le contenu (supprimer ancien, copier nouveau)
+        if [ -d "Backup" ]; then
+          rm -rf Backup/*
+        fi
         
-        # Vérifier s'il y a des changements
-        if git diff --quiet; then
-          echo "Aucun changement détecté"
-          exit 0
+        # Copier tout le contenu de Source vers Backup
+        if [ -d "Source" ]; then
+          cp -r Source/* Backup/ 2>/dev/null || true
+          echo "✅ Contenu de Source copié vers Backup"
+        else
+          echo "❌ Le dossier Source n'existe pas"
+        fi
+        
+        # Afficher le contenu pour debug
+        echo "Contenu de Backup après sync:"
+        ls -la Backup/ || echo "Backup vide"
+
+    - name: Check for changes
+      id: changes
+      run: |
+        git add Backup/
+        if git diff --staged --quiet; then
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+          echo "🔵 Aucun changement détecté"
+        else
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "🟢 Changements détectés, commit à faire"
         fi
 
     - name: Commit and push changes
+      if: steps.changes.outputs.has_changes == 'true'
       run: |
-        git add Backup/
         git commit -m "🔄 Sync automatique: Source → Backup [skip ci]"
-        git push
+        git push origin test2
+        echo "✅ Changements poussés sur la branche test2"
