@@ -1,112 +1,86 @@
-name: 🔄 Auto Backup - Source to Backup
+name: Backup System with Logs & Archives
 
 on:
-  # Déclencheurs
   push:
     paths:
-      - 'Source/**'  # Se déclenche seulement si Source change
+      - 'Source/**'
     branches: [ main ]
-  
-  pull_request:
-    branches: [ main ]
-  
   schedule:
-    # Backup automatique tous les jours à minuit (UTC)
-    - cron: '0 0 * * *'
-  
-  workflow_dispatch:  # Permet de lancer manuellement
+    - cron: '0 2 * * *'  # Tous les jours à 2h UTC
+  workflow_dispatch:
 
 env:
   SOURCE_DIR: 'Source'
   BACKUP_DIR: 'Backup'
+  ARCHIVE_DIR: 'Archives'
+  LOGS_DIR: 'Logs'
 
 jobs:
-  synchronisation:
-    name: 🔄 Synchronisation Source → Backup
+  backup-with-logs:
+    name: 📦 Backup avec Logs et Archives
     runs-on: ubuntu-latest
     permissions:
       contents: write
     
     steps:
-      # Étape 1: Récupération du code
-      - name: 📥 Checkout du repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Récupère tout l'historique
-      
-      # Étape 2: Configuration Git
-      - name: ⚙️ Configuration Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          echo "✅ Git configuré"
-      
-      # Étape 3: Synchronisation des fichiers
-      - name: 📂 Synchronisation Source → Backup
-        run: |
-          echo "🔄 Début de la synchronisation..."
-          echo "Dossier Source: $SOURCE_DIR"
-          echo "Dossier Backup: $BACKUP_DIR"
-          
-          # Vérifier si Source existe
-          if [ ! -d "$SOURCE_DIR" ]; then
-            echo "❌ Le dossier $SOURCE_DIR n'existe pas"
-            exit 1
-          fi
-          
-          # Nettoyer le Backup existant
-          if [ -d "$BACKUP_DIR" ]; then
-            rm -rf "$BACKUP_DIR"/*
-            echo "🧹 Backup précédent nettoyé"
-          else
-            mkdir -p "$BACKUP_DIR"
-            echo "📁 Dossier Backup créé"
-          fi
-          
-          # Copier récursivement le contenu
-          cp -r "$SOURCE_DIR"/* "$BACKUP_DIR"/ 2>/dev/null || true
-          
-          # Vérification
-          echo "✅ Synchronisation terminée"
-          echo "📊 Contenu de Backup:"
-          ls -la "$BACKUP_DIR"/
-          echo "📊 Contenu de Source:"
-          ls -la "$SOURCE_DIR"/
-      
-      # Étape 4: Vérification des changements
-      - name: 🔍 Vérification des modifications
-        id: check_changes
-        run: |
-          git add "$BACKUP_DIR"/
-          if git diff --staged --quiet; then
-            echo "changes_detected=false" >> $GITHUB_OUTPUT
-            echo "🔵 Aucun changement détecté"
-          else
-            echo "changes_detected=true" >> $GITHUB_OUTPUT
-            echo "🟢 Changements détectés - Commit nécessaire"
-            echo "📝 Fichiers modifiés:"
-            git diff --staged --name-only
-          fi
-      
-      # Étape 5: Commit et Push
-      - name: 📝 Commit et Push des changements
-        if: steps.check_changes.outputs.changes_detected == 'true'
-        run: |
-          # Créer le message de commit avec date
-          COMMIT_MSG="🤖 Auto-Backup: $(date +'%Y-%m-%d %H:%M:%S')"
-          
-          git commit -m "$COMMIT_MSG"
-          git push
-          echo "✅ Backup poussé avec succès!"
-          echo "📋 Commit: $COMMIT_MSG"
-      
-      # Étape 6: Rapport final
-      - name: 📊 Rapport de synchronisation
-        run: |
-          echo "🎉 SYNCHRONISATION TERMINÉE"
-          echo "================================"
-          echo "🕐 Heure: $(date)"
-          echo "📁 Source: $SOURCE_DIR"
-          echo "📁 Backup: $BACKUP_DIR"
-          echo "🔄 Changements: ${{ steps.check_changes.outputs.changes_detected }}"
-          echo "================================"
+    # Étape 1: Checkout
+    - name: 📥 Checkout du code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # Étape 2: Configuration
+    - name: ⚙️ Configuration Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        mkdir -p $ARCHIVE_DIR $LOGS_DIR
+
+    # Étape 3: Création du log
+    - name: 📝 Début du logging
+      run: |
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        LOG_FILE="$LOGS_DIR/backup_${TIMESTAMP}.log"
+        echo "🟢 DEBUT BACKUP - $TIMESTAMP" > $LOG_FILE
+        echo "================================" >> $LOG_FILE
+        echo "Source: $SOURCE_DIR" >> $LOG_FILE
+        echo "Backup: $BACKUP_DIR" >> $LOG_FILE
+        echo "Archive: $ARCHIVE_DIR" >> $LOG_FILE
+        echo "Log: $LOG_FILE" >> $LOG_FILE
+        echo "================================" >> $LOG_FILE
+
+    # Étape 4: Analyse avant backup
+    - name: 🔍 Analyse pré-backup
+      run: |
+        echo "📊 ANALYSE PRE-BACKUP" >> $LOG_FILE
+        echo "Fichiers dans Source:" >> $LOG_FILE
+        find $SOURCE_DIR -type f >> $LOG_FILE 2>/dev/null || echo "Aucun fichier" >> $LOG_FILE
+        echo "---" >> $LOG_FILE
+
+    # Étape 5: Archivage avant modification
+    - name: 🗂️ Archivage du Backup actuel
+      run: |
+        if [ -d "$BACKUP_DIR" ] && [ "$(ls -A $BACKUP_DIR 2>/dev/null)" ]; then
+          ARCHIVE_NAME="backup_$(date +%Y%m%d_%H%M%S).tar.gz"
+          tar -czf "$ARCHIVE_DIR/$ARCHIVE_NAME" "$BACKUP_DIR"/
+          echo "📦 Archive créée: $ARCHIVE_NAME" >> $LOG_FILE
+          echo "📁 Fichiers archivés:" >> $LOG_FILE
+          tar -tzf "$ARCHIVE_DIR/$ARCHIVE_NAME" | head -10 >> $LOG_FILE
+        else
+          echo "ℹ️ Aucun backup précédent à archiver" >> $LOG_FILE
+        fi
+
+    # Étape 6: Synchronisation
+    - name:  Synchronisation Source → Backup
+      run: |
+        echo "🔄 SYNCHRONISATION" >> $LOG_FILE
+        rm -rf $BACKUP_DIR/*
+        mkdir -p $BACKUP_DIR
+        
+        if [ -d "$SOURCE_DIR" ] && [ "$(ls -A $SOURCE_DIR 2>/dev/null)" ]; then
+          cp -r $SOURCE_DIR/* $BACKUP_DIR/ 2>/dev/null || true
+          echo "✅ Fichiers copiés avec succès" >> $LOG_FILE
+          echo "📋 Contenu Backup après sync:" >> $LOG_FILE
+          find $BACKUP_DIR -type f >> $LOG_FILE
+        else
+          echo "
