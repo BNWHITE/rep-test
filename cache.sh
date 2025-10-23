@@ -17,12 +17,19 @@ fi
 # Créer le dossier Backup si inexistant
 mkdir -p "$BACKUP_DIR"
 
-# Copier les fichiers
-cp -r "$SRC_DIR/"* "$BACKUP_DIR"/ 2>>"$LOG_FILE" || echo "Aucun fichier à copier" >> "$LOG_FILE"
-echo "Fichiers copiés dans $BACKUP_DIR" >> "$LOG_FILE"
+# Copier les fichiers (même si aucun fichier)
+shopt -s nullglob
+FILES=("$SRC_DIR"/*)
+if [ ${#FILES[@]} -gt 0 ]; then
+    cp -r "$SRC_DIR/"* "$BACKUP_DIR"/ 2>>"$LOG_FILE"
+    echo "Fichiers copiés dans $BACKUP_DIR" >> "$LOG_FILE"
+else
+    echo "Aucun fichier à copier dans $SRC_DIR" >> "$LOG_FILE"
+fi
 
-# Créer l’archive
-if [ "$(ls -A $BACKUP_DIR)" ]; then
+# Créer l’archive seulement si le backup n’est pas vide
+BACKUP_FILES=("$BACKUP_DIR"/*)
+if [ ${#BACKUP_FILES[@]} -gt 0 ]; then
     tar -czf "$ARCHIVE_NAME" "$BACKUP_DIR" 2>>"$LOG_FILE"
     echo "Archive créée : $ARCHIVE_NAME" >> "$LOG_FILE"
 else
