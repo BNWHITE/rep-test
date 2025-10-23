@@ -1,4 +1,4 @@
-name: 🔄 Backup System with Logs & Archives
+name: 🔄 Backup System Unifié
 
 on:
   push:
@@ -13,74 +13,201 @@ env:
   SOURCE_DIR: 'Source'
   BACKUP_DIR: 'Backup'
   ARCHIVE_DIR: 'Archives'
-  LOGS_DIR: 'Logs'
 
 jobs:
-  backup-with-logs:
-    name: 📦 Backup avec Logs et Archives
+  unified-backup:
+    name: 📦 Backup & Archives Unifiés
     runs-on: ubuntu-latest
     permissions:
       contents: write
     
     steps:
-    # Étape 1: Checkout
-    - name: 📥 Checkout du code
+    # Étape 1: Initialisation
+    - name: 📥 Checkout et configuration
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-
-    # Étape 2: Configuration
-    - name: ⚙️ Configuration Git
+    
+    - name: ⚙️ Configuration initiale
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        mkdir -p $ARCHIVE_DIR $LOGS_DIR
-
-    # Étape 3: Création du log
-    - name: 📝 Début du logging
-      run: |
+        mkdir -p $ARCHIVE_DIR
+        
+        # Variables pour la session
         TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-        LOG_FILE="$LOGS_DIR/backup_${TIMESTAMP}.log"
-        echo "🟢 DEBUT BACKUP - $TIMESTAMP" > $LOG_FILE
-        echo "================================" >> $LOG_FILE
+        SESSION_ID="backup_${TIMESTAMP}"
+        echo "SESSION_ID=$SESSION_ID" >> $GITHUB_ENV
+        
+        # Fichier de log principal dans Archives
+        LOG_FILE="$ARCHIVE_DIR/${SESSION_ID}.log"
+        echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
+        
+        # Début du log
+        echo "🟢 DEBUT SESSION BACKUP - $TIMESTAMP" > $LOG_FILE
+        echo "======================================" >> $LOG_FILE
+        echo "Déclencheur: ${{ github.event_name }}" >> $LOG_FILE
+        echo "Branche: ${{ github.ref }}" >> $LOG_FILE
+        echo "Commit: ${{ github.sha }}" >> $LOG_FILE
         echo "Source: $SOURCE_DIR" >> $LOG_FILE
         echo "Backup: $BACKUP_DIR" >> $LOG_FILE
-        echo "Archive: $ARCHIVE_DIR" >> $LOG_FILE
-        echo "Log: $LOG_FILE" >> $LOG_FILE
-        echo "================================" >> $LOG_FILE
+        echo "Archives: $ARCHIVE_DIR" >> $LOG_FILE
+        echo "Session: $SESSION_ID" >> $LOG_FILE
+        echo "======================================" >> $LOG_FILE
 
-    # Étape 4: Analyse avant backup
-    - name: 🔍 Analyse pré-backup
+    # Étape 2: Audit pré-backup
+    - name: 🔍 Audit des fichiers sources
       run: |
-        echo "📊 ANALYSE PRE-BACKUP" >> $LOG_FILE
-        echo "Fichiers dans Source:" >> $LOG_FILE
-        find $SOURCE_DIR -type f >> $LOG_FILE 2>/dev/null || echo "Aucun fichier" >> $LOG_FILE
-        echo "---" >> $LOG_FILE
-
-    # Étape 5: Archivage avant modification
-    - name: 🗂️ Archivage du Backup actuel
-      run: |
-        if [ -d "$BACKUP_DIR" ] && [ "$(ls -A $BACKUP_DIR 2>/dev/null)" ]; then
-          ARCHIVE_NAME="backup_$(date +%Y%m%d_%H%M%S).tar.gz"
-          tar -czf "$ARCHIVE_DIR/$ARCHIVE_NAME" "$BACKUP_DIR"/
-          echo "📦 Archive créée: $ARCHIVE_NAME" >> $LOG_FILE
-          echo "📁 Fichiers archivés:" >> $LOG_FILE
-          tar -tzf "$ARCHIVE_DIR/$ARCHIVE_NAME" | head -10 >> $LOG_FILE
-        else
-          echo "ℹ️ Aucun backup précédent à archiver" >> $LOG_FILE
-        fi
-
-    # Étape 6: Synchronisation
-    - name: 🔄 Synchronisation Source → Backup
-      run: |
-        echo "🔄 SYNCHRONISATION" >> $LOG_FILE
-        rm -rf $BACKUP_DIR/*
-        mkdir -p $BACKUP_DIR
+        echo "" >> $LOG_FILE
+        echo "📊 AUDIT PRE-BACKUP" >> $LOG_FILE
+        echo "-------------------" >> $LOG_FILE
         
         if [ -d "$SOURCE_DIR" ] && [ "$(ls -A $SOURCE_DIR 2>/dev/null)" ]; then
-          cp -r $SOURCE_DIR/* $BACKUP_DIR/ 2>/dev/null || true
-          echo "✅ Fichiers copiés avec succès" >> $LOG_FILE
-          echo "📋 Contenu Backup après sync:" >> $LOG_FILE
-          find $BACKUP_DIR -type f >> $LOG_FILE
+          echo "📁 Contenu de $SOURCE_DIR:" >> $LOG_FILE
+          find $SOURCE_DIR -type f -exec ls -la {} \; >> $LOG_FILE 2>/dev/null || echo "Aucun fichier accessible" >> $LOG_FILE
+          SOURCE_COUNT=$(find $SOURCE_DIR -type f | wc -l)
+          echo "✅ Total fichiers sources: $SOURCE_COUNT" >> $LOG_FILE
         else
-          echo "
+          echo "⚠️ Dossier Source vide ou inaccessible" >> $LOG_FILE
+          SOURCE_COUNT=0
+        fi
+        echo "SOURCE_COUNT=$SOURCE_COUNT" >> $GITHUB_ENV
+
+    # Étape 3: Archivage du backup existant
+    - name: 🗂️ Archivage du backup précédent
+      run: |
+        echo "" >> $LOG_FILE
+        echo "📦 ARCHIVAGE BACKUP EXISTANT" >> $LOG_FILE
+        echo "----------------------------" >> $LOG_FILE
+        
+        if [ -d "$BACKUP_DIR" ] && [ "$(ls -A $BACKUP_DIR 2>/dev/null)" ]; then
+          ARCHIVE_NAME="${SESSION_ID}_previous.tar.gz"
+          tar -czf "$ARCHIVE_DIR/$ARCHIVE_NAME" "$BACKUP_DIR"/
+          
+          echo "✅ Archive créée: $ARCHIVE_NAME" >> $LOG_FILE
+          echo "📋 Contenu archivé:" >> $LOG_FILE
+          tar -tzf "$ARCHIVE_DIR/$ARCHIVE_NAME" | head -20 >> $LOG_FILE
+          echo "[...]" >> $LOG_FILE
+          
+          PREVIOUS_COUNT=$(tar -tzf "$ARCHIVE_DIR/$ARCHIVE_NAME" | grep -v "/$" | wc -l)
+          echo "📊 Fichiers archivés: $PREVIOUS_COUNT" >> $LOG_FILE
+        else
+          echo "ℹ️ Aucun backup précédent à archiver" >> $LOG_FILE
+          PREVIOUS_COUNT=0
+        fi
+        echo "PREVIOUS_COUNT=$PREVIOUS_COUNT" >> $GITHUB_ENV
+
+    # Étape 4: Synchronisation
+    - name: 🔄 Synchronisation Source → Backup
+      run: |
+        echo "" >> $LOG_FILE
+        echo "🔄 SYNCHRONISATION" >> $LOG_FILE
+        echo "------------------" >> $LOG_FILE
+        
+        # Nettoyage complet
+        rm -rf $BACKUP_DIR
+        mkdir -p $BACKUP_DIR
+        
+        if [ $SOURCE_COUNT -gt 0 ]; then
+          # Copie avec préservation des permissions
+          cp -r $SOURCE_DIR/* $BACKUP_DIR/ 2>&1 >> $LOG_FILE || echo "⚠️ Erreurs lors de la copie" >> $LOG_FILE
+          
+          echo "✅ Synchronisation terminée" >> $LOG_FILE
+          echo "📁 Contenu de $BACKUP_DIR:" >> $LOG_FILE
+          find $BACKUP_DIR -type f -exec ls -la {} \; >> $LOG_FILE 2>/dev/null
+          
+          BACKUP_COUNT=$(find $BACKUP_DIR -type f | wc -l)
+          echo "📊 Fichiers dans Backup: $BACKUP_COUNT" >> $LOG_FILE
+        else
+          echo "⏭️ Aucun fichier source, synchronisation ignorée" >> $LOG_FILE
+          BACKUP_COUNT=0
+        fi
+        echo "BACKUP_COUNT=$BACKUP_COUNT" >> $GITHUB_ENV
+
+    # Étape 5: Création du rapport de session
+    - name: 📈 Génération du rapport final
+      run: |
+        echo "" >> $LOG_FILE
+        echo "📈 RAPPORT DE SESSION" >> $LOG_FILE
+        echo "=====================" >> $LOG_FILE
+        echo "🕐 Début: $(date -d @$(echo $SESSION_ID | cut -d'_' -f2 | cut -c1-8))" >> $LOG_FILE
+        echo "⏱️ Fin: $(date)" >> $LOG_FILE
+        echo "📁 Fichiers sources: $SOURCE_COUNT" >> $LOG_FILE
+        echo "📁 Fichiers backup: $BACKUP_COUNT" >> $LOG_FILE
+        echo "📦 Fichiers archivés: $PREVIOUS_COUNT" >> $LOG_FILE
+        echo "📊 Taux de réussite: $(( BACKUP_COUNT * 100 / (SOURCE_COUNT + 1) ))%" >> $LOG_FILE
+        echo "🎯 Statut: $([ $BACKUP_COUNT -eq $SOURCE_COUNT ] && echo 'SUCCÈS' || echo 'ATTENTION')" >> $LOG_FILE
+        echo "🔚 FIN SESSION - $(date +%Y%m%d_%H%M%S)" >> $LOG_FILE
+
+    # Étape 6: Nettoyage et optimisation
+    - name: 🧹 Gestion des archives
+      run: |
+        echo "" >> $LOG_FILE
+        echo "🧹 GESTION DU STOCKAGE" >> $LOG_FILE
+        echo "---------------------" >> $LOG_FILE
+        
+        # Compter les archives avant nettoyage
+        ARCHIVE_TOTAL=$(find $ARCHIVE_DIR -name "*.tar.gz" | wc -l)
+        LOG_TOTAL=$(find $ARCHIVE_DIR -name "*.log" | wc -l)
+        
+        echo "📦 Archives avant nettoyage: $ARCHIVE_TOTAL" >> $LOG_FILE
+        echo "📝 Logs avant nettoyage: $LOG_TOTAL" >> $LOG_FILE
+        
+        # Garder seulement les 15 dernières archives + logs
+        if [ $ARCHIVE_TOTAL -gt 15 ]; then
+          echo "🗑️ Nettoyage des anciennes archives..." >> $LOG_FILE
+          find $ARCHIVE_DIR -name "*.tar.gz" -type f | sort | head -n -15 | while read file; do
+            echo "  Supprimé: $(basename $file)" >> $LOG_FILE
+            rm "$file"
+          done
+        fi
+        
+        if [ $LOG_TOTAL -gt 15 ]; then
+          echo "🗑️ Nettoyage des anciens logs..." >> $LOG_FILE
+          find $ARCHIVE_DIR -name "*.log" -type f | sort | head -n -15 | while read file; do
+            echo "  Supprimé: $(basename $file)" >> $LOG_FILE
+            rm "$file"
+          done
+        fi
+        
+        echo "✅ Nettoyage terminé" >> $LOG_FILE
+        echo "📦 Archives restantes: $(find $ARCHIVE_DIR -name "*.tar.gz" | wc -l)" >> $LOG_FILE
+        echo "📝 Logs restants: $(find $ARCHIVE_DIR -name "*.log" | wc -l)" >> $LOG_FILE
+
+    # Étape 7: Commit unifié
+    - name: 💾 Commit des changements
+      run: |
+        echo "" >> $LOG_FILE
+        echo "💾 COMMIT AUTOMATIQUE" >> $LOG_FILE
+        echo "---------------------" >> $LOG_FILE
+        
+        git add $BACKUP_DIR/ $ARCHIVE_DIR/
+        
+        if git diff --staged --quiet; then
+          echo "🔵 Aucun changement détecté" >> $LOG_FILE
+          echo "⏭️ Commit ignoré" >> $LOG_FILE
+        else
+          COMMIT_MSG="🤖 Backup System: $SESSION_ID - S:$SOURCE_COUNT B:$BACKUP_COUNT A:$PREVIOUS_COUNT"
+          git commit -m "$COMMIT_MSG"
+          git push
+          echo "✅ Commit effectué: $COMMIT_MSG" >> $LOG_FILE
+          echo "📤 Changements poussés sur ${{ github.ref }}" >> $LOG_FILE
+        fi
+
+    # Étape 8: Résumé console
+    - name: 🎯 Résumé d'exécution
+      run: |
+        echo "=========================================="
+        echo "🎉 BACKUP UNIFIÉ TERMINÉ - $SESSION_ID"
+        echo "=========================================="
+        echo "📁 Source: $SOURCE_COUNT fichiers"
+        echo "📁 Backup: $BACKUP_COUNT fichiers"
+        echo "📦 Archives: $(find $ARCHIVE_DIR -name "*.tar.gz" | wc -l) fichiers"
+        echo "📝 Logs: $(find $ARCHIVE_DIR -name "*.log" | wc -l) fichiers"
+        echo "📊 Rapport: $ARCHIVE_DIR/${SESSION_ID}.log"
+        echo "🕐 Durée: $(date)"
+        echo "=========================================="
+        
+        # Afficher les dernières lignes du log
+        echo "📄 Extrait du log:"
+        tail -10 $LOG_FILE
