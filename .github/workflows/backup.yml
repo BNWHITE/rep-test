@@ -1,61 +1,30 @@
-name: Force Backup
+name: Brutal Backup
 
 on:
   push:
-    paths:
-      - 'Source/**'
     branches: [ test2 ]
   workflow_dispatch:
 
 jobs:
-  force-backup:
+  brutal-sync:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
         ref: test2
-        fetch-depth: 0
-
-    - name: Setup Git config
+    
+    - name: Destroy and recreate Backup
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-
-    - name: Force clean sync
-      run: |
-        # Supprimer complètement le dossier Backup
         rm -rf Backup
-        
-        # Recréer et copier tout depuis Source
-        mkdir -p Backup
-        if [ -d "Source" ] && [ "$(ls -A Source)" ]; then
-          cp -r Source/* Backup/
-          echo "✅ Synchronisation forcée: Source → Backup"
-          echo "Fichiers copiés:"
-          ls -la Backup/
-        else
-          echo "⚠️ Le dossier Source est vide ou n'existe pas"
-          # Créer un fichier vide pour forcer le commit
-          touch Backup/sync-info.txt
-        fi
-
-    - name: Force add and commit
+        mkdir Backup
+        [ -d "Source" ] && cp -r Source/* Backup/ 2>/dev/null || true
+        echo "Brutal sync done: $(date)" > Backup/sync-force.txt
+    
+    - name: Push brutally
       run: |
-        # Ajouter tous les changements de force
-        git add -f Backup/
-        git add -A
-        
-        # Créer le commit même si vide (--allow-empty)
-        git commit -m "🚀 FORCE SYNC: Source → Backup" --allow-empty
-        
-        echo "✅ Commit créé avec changement forcé"
-
-    - name: Force push to test2
-      run: |
+        git config user.name "GitHub Brutal Bot"
+        git config user.email "actions@users.noreply.github.com"
+        git add .
+        git commit -m "💥 BRUTAL SYNC: $(date)" || exit 0
         git push origin test2 --force
-        echo "🎯 Push forcé effectué sur test2"
