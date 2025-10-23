@@ -1,0 +1,44 @@
+name: Backup Source to Backup
+
+on:
+  push:
+    paths:
+      - 'Source/**'
+    branches: [ main ]
+  workflow_dispatch:  # Permet de déclencher manuellement
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Setup Git config
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Sync Source to Backup
+      run: |
+        # Créer le dossier Backup s'il n'existe pas
+        mkdir -p Backup
+        
+        # Copier récursivement le contenu de Source vers Backup
+        cp -r Source/* Backup/ || true
+        
+        # Vérifier s'il y a des changements
+        if git diff --quiet; then
+          echo "Aucun changement détecté"
+          exit 0
+        fi
+
+    - name: Commit and push changes
+      run: |
+        git add Backup/
+        git commit -m "🔄 Sync automatique: Source → Backup [skip ci]"
+        git push
