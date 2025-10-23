@@ -1,8 +1,8 @@
-SRC_DIR="source"
-BACKUP_DIR="backup"
+SRC_DIR="Source"
+BACKUP_DIR="Backup"
 
 LOG_FILE="log.txt"
-ARCHIVE_NAME="backup_$(date +%Y-%m-%d_%H-%M-%S).tar.gz"
+ARCHIVE_NAME="Backup_$(date +%Y-%m-%d_%H-%M-%S).tar.gz"
 
 echo "=== Sauvegarde lancée le $(date) ===" >> "$LOG_FILE"
 
