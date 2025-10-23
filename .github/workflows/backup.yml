@@ -1,4 +1,4 @@
-name: Backup System with Logs & Archives
+name: 🔄 Backup System with Logs & Archives
 
 on:
   push:
@@ -71,7 +71,7 @@ jobs:
         fi
 
     # Étape 6: Synchronisation
-    - name:  Synchronisation Source → Backup
+    - name: 🔄 Synchronisation Source → Backup
       run: |
         echo "🔄 SYNCHRONISATION" >> $LOG_FILE
         rm -rf $BACKUP_DIR/*
