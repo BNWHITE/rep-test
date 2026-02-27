@@ -1,34 +1,34 @@
-🟢 DEBUT SESSION BACKUP - 20260212_042812
+🟢 DEBUT SESSION BACKUP - 20260227_041805
 ======================================
 Déclencheur: schedule
 Branche: refs/heads/main
-Commit: c8daa9074f13ae8192a8f661010b38b94c889d39
+Commit: e9da4583206ccebc8fcad3087c392d9d81abcfda
 Source: Source
 Backup: Backup
 Archives: Archives
-Session: backup_20260212_042812
+Session: backup_20260227_041805
 ======================================
 
 📊 AUDIT PRE-BACKUP
 -------------------
 📁 Contenu de Source:
--rw-r--r-- 1 runner runner 5 Feb 12 04:28 Source/test.txt
--rw-r--r-- 1 runner runner 16 Feb 12 04:28 Source/fichier.txt
--rw-r--r-- 1 runner runner 10 Feb 12 04:28 Source/big-test.txt
--rw-r--r-- 1 runner runner 22 Feb 12 04:28 Source/test-ultime.txt
--rw-r--r-- 1 runner runner 30 Feb 12 04:28 Source/Test-ultra-ultime.txt
+-rw-r--r-- 1 runner runner 5 Feb 27 04:18 Source/test.txt
+-rw-r--r-- 1 runner runner 22 Feb 27 04:18 Source/test-ultime.txt
+-rw-r--r-- 1 runner runner 30 Feb 27 04:18 Source/Test-ultra-ultime.txt
+-rw-r--r-- 1 runner runner 10 Feb 27 04:18 Source/big-test.txt
+-rw-r--r-- 1 runner runner 16 Feb 27 04:18 Source/fichier.txt
 ✅ Total fichiers sources: 5
 
 📦 ARCHIVAGE BACKUP EXISTANT
 ----------------------------
-✅ Archive créée: backup_20260212_042812_previous.tar.gz
+✅ Archive créée: backup_20260227_041805_previous.tar.gz
 📋 Contenu archivé:
 Backup/
 Backup/test.txt
-Backup/fichier.txt
-Backup/big-test.txt
 Backup/test-ultime.txt
 Backup/Test-ultra-ultime.txt
+Backup/big-test.txt
+Backup/fichier.txt
 [...]
 📊 Fichiers archivés: 5
 
@@ -36,32 +36,32 @@ Backup/Test-ultra-ultime.txt
 ------------------
 ✅ Synchronisation terminée
 📁 Contenu de Backup:
--rw-r--r-- 1 runner runner 5 Feb 12 04:28 Backup/test.txt
--rw-r--r-- 1 runner runner 16 Feb 12 04:28 Backup/fichier.txt
--rw-r--r-- 1 runner runner 10 Feb 12 04:28 Backup/big-test.txt
--rw-r--r-- 1 runner runner 22 Feb 12 04:28 Backup/test-ultime.txt
--rw-r--r-- 1 runner runner 30 Feb 12 04:28 Backup/Test-ultra-ultime.txt
+-rw-r--r-- 1 runner runner 5 Feb 27 04:18 Backup/test.txt
+-rw-r--r-- 1 runner runner 22 Feb 27 04:18 Backup/test-ultime.txt
+-rw-r--r-- 1 runner runner 30 Feb 27 04:18 Backup/Test-ultra-ultime.txt
+-rw-r--r-- 1 runner runner 10 Feb 27 04:18 Backup/big-test.txt
+-rw-r--r-- 1 runner runner 16 Feb 27 04:18 Backup/fichier.txt
 📊 Fichiers dans Backup: 5
 
 📈 RAPPORT DE SESSION
 =====================
-🕐 Début: Sun Aug 23 11:50:12 UTC 1970
-⏱️ Fin: Thu Feb 12 04:28:12 UTC 2026
+🕐 Début: Sun Aug 23 11:50:27 UTC 1970
+⏱️ Fin: Fri Feb 27 04:18:05 UTC 2026
 📁 Fichiers sources: 5
 📁 Fichiers backup: 5
 📦 Fichiers archivés: 5
 📊 Taux de réussite: 83%
 🎯 Statut: SUCCÈS
-🔚 FIN SESSION - 20260212_042812
+🔚 FIN SESSION - 20260227_041805
 
 🧹 GESTION DU STOCKAGE
 ---------------------
 📦 Archives avant nettoyage: 16
 📝 Logs avant nettoyage: 16
 🗑️ Nettoyage des anciennes archives...
-  Supprimé: backup_20260128_034833_previous.tar.gz
+  Supprimé: backup_20260212_042812_previous.tar.gz
 🗑️ Nettoyage des anciens logs...
-  Supprimé: backup_20260128_034833.log
+  Supprimé: backup_20260212_042812.log
 ✅ Nettoyage terminé
 📦 Archives restantes: 15
 📝 Logs restants: 15
