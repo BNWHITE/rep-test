@@ -1,0 +1,70 @@
+🟢 DEBUT SESSION BACKUP - 20260626_031738
+======================================
+Déclencheur: schedule
+Branche: refs/heads/main
+Commit: 3ec3e8382d852f0cb402bb3b0bf560ebc2aa464d
+Source: Source
+Backup: Backup
+Archives: Archives
+Session: backup_20260626_031738
+======================================
+
+📊 AUDIT PRE-BACKUP
+-------------------
+📁 Contenu de Source:
+-rw-r--r-- 1 runner runner 10 Jun 26 03:17 Source/big-test.txt
+-rw-r--r-- 1 runner runner 22 Jun 26 03:17 Source/test-ultime.txt
+-rw-r--r-- 1 runner runner 30 Jun 26 03:17 Source/Test-ultra-ultime.txt
+-rw-r--r-- 1 runner runner 5 Jun 26 03:17 Source/test.txt
+-rw-r--r-- 1 runner runner 16 Jun 26 03:17 Source/fichier.txt
+✅ Total fichiers sources: 5
+
+📦 ARCHIVAGE BACKUP EXISTANT
+----------------------------
+✅ Archive créée: backup_20260626_031738_previous.tar.gz
+📋 Contenu archivé:
+Backup/
+Backup/big-test.txt
+Backup/test-ultime.txt
+Backup/Test-ultra-ultime.txt
+Backup/test.txt
+Backup/fichier.txt
+[...]
+📊 Fichiers archivés: 5
+
+🔄 SYNCHRONISATION
+------------------
+✅ Synchronisation terminée
+📁 Contenu de Backup:
+-rw-r--r-- 1 runner runner 10 Jun 26 03:17 Backup/big-test.txt
+-rw-r--r-- 1 runner runner 22 Jun 26 03:17 Backup/test-ultime.txt
+-rw-r--r-- 1 runner runner 30 Jun 26 03:17 Backup/Test-ultra-ultime.txt
+-rw-r--r-- 1 runner runner 5 Jun 26 03:17 Backup/test.txt
+-rw-r--r-- 1 runner runner 16 Jun 26 03:17 Backup/fichier.txt
+📊 Fichiers dans Backup: 5
+
+📈 RAPPORT DE SESSION
+=====================
+🕐 Début: Sun Aug 23 11:57:06 UTC 1970
+⏱️ Fin: Fri Jun 26 03:17:38 UTC 2026
+📁 Fichiers sources: 5
+📁 Fichiers backup: 5
+📦 Fichiers archivés: 5
+📊 Taux de réussite: 83%
+🎯 Statut: SUCCÈS
+🔚 FIN SESSION - 20260626_031738
+
+🧹 GESTION DU STOCKAGE
+---------------------
+📦 Archives avant nettoyage: 16
+📝 Logs avant nettoyage: 16
+🗑️ Nettoyage des anciennes archives...
+  Supprimé: backup_20260611_031635_previous.tar.gz
+🗑️ Nettoyage des anciens logs...
+  Supprimé: backup_20260611_031635.log
+✅ Nettoyage terminé
+📦 Archives restantes: 15
+📝 Logs restants: 15
+
+💾 COMMIT AUTOMATIQUE
+---------------------
